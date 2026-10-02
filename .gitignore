@@ -1,0 +1,6 @@
+# Cached ONS responses. Regenerate with --cache; never commit data.
+.cache/
+*.csv
+__pycache__/
+.venv/
+.DS_Store
