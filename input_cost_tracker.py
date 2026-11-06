@@ -36,7 +36,9 @@ USER_AGENT = (
 # Use the undated endpoint. The /mm22/ dataset path serves a frozen edition
 # that stopped in Jan 2025, and returns it without any error. Getting this
 # wrong means silently reporting data that is over a year old.
-ONS_BASE = "https://www.ons.gov.uk/economy/inflationandpriceindices/timeseries"
+ONS_HOST = "https://www.ons.gov.uk"
+PRICES_PATH = "economy/inflationandpriceindices/timeseries"
+EARNINGS_PATH = "employmentandlabourmarket/peopleinwork/earningsandworkinghours/timeseries"
 
 MONTHS = {
     "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUN": 6,
@@ -54,7 +56,8 @@ class Series:
     cdid: str
     label: str
     basket: str   # industrial | food | economy
-    side: str     # input | output | consumer
+    side: str     # input | output | labour
+    path: str = PRICES_PATH   # ONS section the series lives under
 
 
 # Verified against ons.gov.uk. Every code here was fetched and checked.
@@ -71,6 +74,10 @@ SERIES: list[Series] = [
     # Food pair: what food processors buy, what they charge.
     Series("GHEF", "Inputs to preserved meat and meat products", "food", "input"),
     Series("EVOQ", "Output, grain mill products", "food", "output"),
+
+    # Labour is an input cost too, and the one no producer price index shows.
+    Series("K54U", "Average weekly earnings index, whole economy", "economy",
+           "labour", path=EARNINGS_PATH),
 ]
 
 # Pairs to test for pass-through. Input first, output second.
@@ -83,14 +90,15 @@ PAIRS = [
 
 # ---------------------------------------------------------------- fetching
 
-def fetch(cdid: str, cache_dir: str | None = None) -> dict[str, float]:
+def fetch(cdid: str, cache_dir: str | None = None,
+          path: str = PRICES_PATH) -> dict[str, float]:
     """Return {'YYYY-MM': index_value} for an ONS series."""
     cache_path = os.path.join(cache_dir, f"{cdid}.json") if cache_dir else None
     if cache_path and os.path.exists(cache_path):
         with open(cache_path, encoding="utf-8") as fh:
             payload = json.load(fh)
     else:
-        url = f"{ONS_BASE}/{cdid.lower()}/data"
+        url = f"{ONS_HOST}/{path}/{cdid.lower()}/data"
         request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(request, timeout=60) as response:
             payload = json.load(response)
@@ -581,7 +589,7 @@ def main() -> int:
     levels: dict[str, dict[str, float]] = {}
     for series in SERIES:
         try:
-            levels[series.cdid] = fetch(series.cdid, args.cache)
+            levels[series.cdid] = fetch(series.cdid, args.cache, series.path)
         except (urllib.error.URLError, urllib.error.HTTPError, ValueError) as exc:
             print(f"  could not fetch {series.cdid} ({series.label}): {exc}")
 

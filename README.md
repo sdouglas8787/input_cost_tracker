@@ -84,6 +84,11 @@ All codes verified against ons.gov.uk.
 | EW6T | Output, basic iron, steel and ferro-alloys | industrial |
 | GHEF | Inputs to preserved meat and meat products | food |
 | EVOQ | Output, grain mill products | food |
+| K54U | Average weekly earnings index, whole economy | labour |
+
+Labour is in the basket because it is the input cost no producer price index
+shows: wage growth reaches the factory gate as surely as steel does, and a
+cost base read without it flatters every pass-through calculation.
 
 Adding a series means adding one row to `SERIES` in the source. Pairs to test
 go in `PAIRS`.
